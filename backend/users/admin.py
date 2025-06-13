@@ -12,7 +12,6 @@ class CustomUserAdmin(UserAdmin):
                     'subscriptions_count')
 
     search_fields = ('username', 'email')
-    ordering = ('username',)
 
     fieldsets = (
         (None, {'fields': ('email', 'username', 'password')}),
