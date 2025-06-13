@@ -51,9 +51,11 @@ class User(AbstractUser):
 
 class Subscribe(models.Model):
     user = models.ForeignKey(
-        User, verbose_name='Подписчик', on_delete=models.CASCADE)
+        User, verbose_name='Подписчик', on_delete=models.CASCADE,
+        related_name='subscribed_users')
     author = models.ForeignKey(
-        User, verbose_name='Подписан', on_delete=models.CASCADE)
+        User, verbose_name='Подписан', on_delete=models.CASCADE,
+        related_name='authors')
 
     class Meta:
         verbose_name = 'Подписка'
