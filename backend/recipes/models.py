@@ -23,7 +23,7 @@ class Recipe(models.Model):
         User, verbose_name="Автор", on_delete=models.CASCADE)
     name = models.CharField(max_length=128, verbose_name='Название')
     image = models.ImageField(verbose_name='Картинка',
-                              upload_to='recipes/images/')
+                              upload_to='recipes/')
     text = models.CharField(verbose_name='Описание')
     ingredients = models.ManyToManyField(
         Ingredient, verbose_name='Список ингредиентов',

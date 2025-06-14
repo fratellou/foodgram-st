@@ -34,7 +34,7 @@ class User(AbstractUser):
         verbose_name='Изображение аватара',
         blank=True,
         null=True,
-        upload_to="recipes/avatars/",
+        upload_to="avatars/",
     )
 
     USERNAME_FIELD = 'email'
