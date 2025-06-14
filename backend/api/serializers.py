@@ -26,8 +26,17 @@ class UserSerializer(UserSerializer):
 
     avatar = serializers.ImageField(read_only=True)
 
-    class Meta(UserSerializer.Meta):
-        fields = UserSerializer.Meta.fields + ('is_subscribed', 'avatar')
+    class Meta:
+        model = User
+        fields = (
+            'email',
+            'id',
+            'username',
+            'first_name',
+            'last_name',
+            'is_subscribed',
+            'avatar'
+        )
         read_only_fields = fields
 
     def get_is_subscribed(self, obj):
@@ -44,14 +53,30 @@ class UserCreateSerializer(serializers.ModelSerializer):
         model = User
         fields = ('email', 'username', 'first_name', 'last_name', 'password')
         extra_kwargs = {
+            'password': {'write_only': True},
             'first_name': {'required': True, 'allow_blank': False},
             'last_name': {'required': True, 'allow_blank': False},
             'email': {'required': True, 'allow_blank': False},
         }
 
     def create(self, validated_data):
-        user = User.objects.create_user(**validated_data)
+        user = User.objects.create_user(
+            email=validated_data['email'],
+            username=validated_data['username'],
+            first_name=validated_data['first_name'],
+            last_name=validated_data['last_name'],
+            password=validated_data['password']
+        )
         return user
+
+    def to_representation(self, instance):
+        return {
+            'email': instance.email,
+            'id': instance.id,
+            'username': instance.username,
+            'first_name': instance.first_name,
+            'last_name': instance.last_name
+        }
 
 
 class IngredientSerializer(serializers.ModelSerializer):
