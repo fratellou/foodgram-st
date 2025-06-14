@@ -23,12 +23,15 @@ from .permission import IsAuthorOrReadOnly
 from rest_framework.pagination import PageNumberPagination
 from django_filters.rest_framework import DjangoFilterBackend
 from django.contrib.auth import get_user_model
-from django.http import HttpResponse
+from django.http import HttpResponse, Http404
 from rest_framework.decorators import action
 from django.shortcuts import get_object_or_404
 from users.models import Subscribe
 from djoser.views import UserViewSet as DjoserUserViewSet
 from django.db.models import Sum
+from rest_framework.exceptions import NotFound
+from rest_framework.reverse import reverse
+from http import HTTPStatus
 
 User = get_user_model()
 
@@ -54,6 +57,12 @@ class UserViewSet(DjoserUserViewSet):
     pagination_class = StandardResultsSetPagination
     permission_classes = [IsAuthenticatedOrReadOnly]
     lookup_field = 'id'
+
+    def get_object(self):
+        try:
+            return super().get_object()
+        except Http404:
+            raise Http404("Страница не найдена.")
 
     def get_serializer_class(self):
         if self.action == 'create':
@@ -154,7 +163,7 @@ class UserViewSet(DjoserUserViewSet):
 
 class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.select_related('author').prefetch_related(
-        'recipe_ingredients__ingredient'
+        'recipe_ingredient__ingredient'
     )
     permission_classes = [IsAuthorOrReadOnly]
     pagination_class = StandardResultsSetPagination
@@ -244,3 +253,18 @@ class RecipeViewSet(viewsets.ModelViewSet):
             'attachment; filename="shopping_list.txt"'
         )
         return response
+
+    @action(methods=['get'], detail=True, url_path='get-link')
+    def get_link(self, request, pk=None):
+        try:
+            recipe = self.get_object()
+            return Response(
+                {
+                    'short-link': request.build_absolute_uri(
+                        reverse('api:recipes-detail', kwargs={'pk': recipe.pk})
+                    )
+                },
+                status=HTTPStatus.OK
+            )
+        except Http404:
+            raise NotFound(detail="Страница не найдена.")

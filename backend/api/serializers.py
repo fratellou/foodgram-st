@@ -100,7 +100,8 @@ class RecipeIngredientSerializer(serializers.ModelSerializer):
 
 class RecipeSerializer(serializers.ModelSerializer):
     author = UserSerializer(read_only=True)
-    ingredients = RecipeIngredientSerializer(many=True)
+    ingredients = RecipeIngredientSerializer(
+        many=True, source='recipe_ingredient')
     is_favorited = serializers.SerializerMethodField()
     is_in_shopping_cart = serializers.SerializerMethodField()
     image = Base64ImageField()
@@ -178,7 +179,7 @@ class RecipeSerializer(serializers.ModelSerializer):
         representation = super().to_representation(instance)
 
         representation["ingredients"] = RecipeIngredientSerializer(
-            instance.recipe_ingredients.all(), many=True
+            instance.recipe_ingredient.all(), many=True
         ).data
         return representation
 
