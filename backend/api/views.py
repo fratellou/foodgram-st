@@ -7,7 +7,8 @@ from .serializers import (
     SubscribeSerializer,
     RecipeSerializer,
     RecipeShortSerializer,
-    RecipeCreateSerializer
+    RecipeCreateSerializer,
+    AvatarSerializer
 )
 from recipes.models import (
     Ingredient,
@@ -65,9 +66,11 @@ class UserViewSet(DjoserUserViewSet):
             raise Http404("Страница не найдена.")
 
     def get_serializer_class(self):
+        if self.action == 'avatar' and self.request.method == 'PUT':
+            return AvatarSerializer
         if self.action == 'create':
             return UserCreateSerializer
-        return super().get_serializer_class()
+        return UserSerializer
 
     @action(detail=False, methods=['get'],
             permission_classes=[IsAuthenticated])
@@ -115,10 +118,9 @@ class UserViewSet(DjoserUserViewSet):
     @action(detail=False, methods=['get'],
             permission_classes=[IsAuthenticated])
     def subscriptions(self, request):
-        subscribed_authors = User.objects.filter(
-            authors__user=request.user
-        )
-        page = self.paginate_queryset(subscribed_authors)
+        subscriptions = Subscribe.objects.filter(user=request.user)
+        authors = [sub.author for sub in subscriptions]
+        page = self.paginate_queryset(authors)
         serializer = SubscribeSerializer(
             page,
             many=True,
@@ -146,19 +148,34 @@ class UserViewSet(DjoserUserViewSet):
             user.save()
             return Response(status=status.HTTP_204_NO_CONTENT)
 
-        # PUT method
-        if 'avatar' not in request.data:
+        serializer = AvatarSerializer(user, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
             return Response(
-                {'error': 'Отсутствует файл аватара'},
-                status=status.HTTP_400_BAD_REQUEST
+                UserSerializer(user, context={'request': request}).data,
+                status=status.HTTP_200_OK
             )
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        user.avatar = request.data['avatar']
-        user.save()
-        return Response(
-            {'avatar': user.avatar.url},
-            status=status.HTTP_200_OK
+    @action(detail=False, methods=['get'],
+            permission_classes=[IsAuthenticated])
+    def favorites(self, request):
+        favorite_recipes = Recipe.objects.filter(
+            favorite_recipe__user=request.user)
+
+        page = self.paginate_queryset(favorite_recipes)
+        serializer = RecipeSerializer(
+            page,
+            many=True,
+            context={'request': request}
         )
+        return self.get_paginated_response(serializer.data)
+
+    @action(detail=False, methods=['get'],
+            permission_classes=[IsAuthenticated])
+    def shopping_cart_count(self, request):
+        count = ShoppingCart.objects.filter(user=request.user).count()
+        return Response({'count': count})
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
@@ -173,6 +190,13 @@ class RecipeViewSet(viewsets.ModelViewSet):
         if self.action in ('list', 'retrieve'):
             return RecipeSerializer
         return RecipeCreateSerializer
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        author_id = self.request.query_params.get('author')
+        if author_id:
+            queryset = queryset.filter(author__id=author_id)
+        return queryset
 
     @action(detail=True, methods=['post', 'delete'],
             permission_classes=[IsAuthenticated])
@@ -236,8 +260,11 @@ class RecipeViewSet(viewsets.ModelViewSet):
         ingredients = RecipeIngredient.objects.filter(
             recipe__shopping_carts__user=request.user
         ).values(
-            'ingredient__name', 'ingredient__measurement_unit'
-        ).annotate(total_amount=Sum('amount'))
+            'ingredient__name',
+            'ingredient__measurement_unit'
+        ).annotate(
+            total_amount=Sum('amount')
+        ).order_by('ingredient__name')
 
         shopping_list = ['Список покупок:\n']
         for item in ingredients:
@@ -258,13 +285,9 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def get_link(self, request, pk=None):
         try:
             recipe = self.get_object()
-            return Response(
-                {
-                    'short-link': request.build_absolute_uri(
-                        reverse('api:recipes-detail', kwargs={'pk': recipe.pk})
-                    )
-                },
-                status=HTTPStatus.OK
+            absolute_uri = request.build_absolute_uri(
+                reverse('api:recipes-detail', kwargs={'pk': recipe.pk})
             )
+            return Response({'short-link': absolute_uri}, status=HTTPStatus.OK)
         except Http404:
             raise NotFound(detail="Страница не найдена.")

@@ -25,7 +25,7 @@ class Base64ImageField(serializers.ImageField):
 class UserSerializer(UserSerializer):
     is_subscribed = serializers.SerializerMethodField()
 
-    avatar = serializers.ImageField(read_only=True)
+    avatar = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -38,7 +38,6 @@ class UserSerializer(UserSerializer):
             'is_subscribed',
             'avatar'
         )
-        read_only_fields = fields
 
     def get_is_subscribed(self, obj):
         request = self.context.get('request')
@@ -47,6 +46,20 @@ class UserSerializer(UserSerializer):
                 user=request.user, author=obj
             ).exists()
         return False
+
+    def get_avatar(self, obj):
+        request = self.context.get('request')
+        if obj.avatar:
+            return request.build_absolute_uri(obj.avatar.url)
+        return None
+
+
+class AvatarSerializer(serializers.ModelSerializer):
+    avatar = Base64ImageField(required=False)
+
+    class Meta:
+        model = User
+        fields = ('avatar',)
 
 
 class UserCreateSerializer(serializers.ModelSerializer):
@@ -104,7 +117,7 @@ class RecipeSerializer(serializers.ModelSerializer):
         many=True, source='recipe_ingredient')
     is_favorited = serializers.SerializerMethodField()
     is_in_shopping_cart = serializers.SerializerMethodField()
-    image = Base64ImageField()
+    image = serializers.SerializerMethodField()
     cooking_time = serializers.IntegerField(min_value=1)
 
     class Meta:
@@ -115,20 +128,14 @@ class RecipeSerializer(serializers.ModelSerializer):
 
     def get_is_favorited(self, obj):
         user = self.context['request'].user
-        if user:
-            return (
-                user.is_authenticated
-                and user.favourites.filter(recipe__exact=obj).exists()
-            )
+        if user.is_authenticated:
+            return obj.favorite_recipe.filter(user=user).exists()
         return False
 
     def get_is_in_shopping_cart(self, obj):
         user = self.context['request'].user
-        if user:
-            return (
-                user.is_authenticated
-                and user.shop_carts.filter(recipe__exact=obj).exists()
-            )
+        if user.is_authenticated:
+            return obj.shopping_recipe.filter(user=user).exists()
         return False
 
     def validate(self, attrs):
@@ -150,7 +157,7 @@ class RecipeSerializer(serializers.ModelSerializer):
         return attrs
 
     def push_ingredients(self, recipe, ingredients):
-        recipe.recipe_ingredients.all().delete()
+        recipe.recipe_ingredient.all().delete()
 
         return RecipeIngredient.objects.bulk_create(
             RecipeIngredient(
@@ -169,19 +176,24 @@ class RecipeSerializer(serializers.ModelSerializer):
         return recipe
 
     def update(self, instance, validated_data):
-        ingredients_data = validated_data.pop('ingredients')
-        instance.recipe_ingredients.all().delete()
+        ingredients_data = validated_data.pop('ingredients', [])
+        instance.recipe_ingredient.all().delete()
         self.push_ingredients(instance, ingredients_data)
 
         return super().update(instance, validated_data)
 
     def to_representation(self, instance):
         representation = super().to_representation(instance)
-
-        representation["ingredients"] = RecipeIngredientSerializer(
-            instance.recipe_ingredient.all(), many=True
-        ).data
+        request = self.context.get('request')
+        if instance.image:
+            representation['image'] = request.build_absolute_uri(
+                instance.image.url)
         return representation
+
+    def get_image(self, obj):
+        if obj.image:
+            return self.context['request'].build_absolute_uri(obj.image.url)
+        return None
 
 
 class FavoriteSerializer(serializers.ModelSerializer):
@@ -203,23 +215,50 @@ class ShoppingCartSerializer(serializers.ModelSerializer):
 
 
 class SubscribeSerializer(serializers.ModelSerializer):
+    is_subscribed = serializers.SerializerMethodField()
     recipes = serializers.SerializerMethodField()
     recipes_count = serializers.SerializerMethodField()
+    avatar = serializers.SerializerMethodField()
 
     class Meta:
-        model = Subscribe
+        model = User
         fields = ('id', 'email', 'username', 'first_name', 'last_name',
                   'is_subscribed', 'avatar', 'recipes', 'recipes_count')
 
+    def get_is_subscribed(self, obj):
+        return True
+
+    def get_recipes_count(self, obj):
+        return obj.recipes.count()
+
+    def get_avatar(self, obj):
+        request = self.context.get('request')
+        if obj.avatar:
+            return request.build_absolute_uri(obj.avatar.url)
+        return None
+
     def get_recipes(self, obj):
         request = self.context.get('request')
-        recipes = obj.author.recipes.all()
+        recipes = obj.recipes.all()
+
+        recipes_limit = request.query_params.get('recipes_limit')
+        if recipes_limit and recipes_limit.isdigit():
+            recipes = recipes[:int(recipes_limit)]
+
         return RecipeShortSerializer(
             recipes, many=True, context={'request': request}
         ).data
 
 
 class RecipeShortSerializer(serializers.ModelSerializer):
+    image = serializers.SerializerMethodField()
+
+    def get_image(self, obj):
+        request = self.context.get('request')
+        if obj.image:
+            return request.build_absolute_uri(obj.image.url)
+        return None
+
     class Meta:
         model = Recipe
         fields = ('id', 'name', 'image', 'cooking_time')
@@ -306,7 +345,7 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
                                                    instance.cooking_time)
         instance.image = validated_data.get('image', instance.image)
 
-        instance.recipe_ingredients.all().delete()
+        instance.recipe_ingredient.all().delete()
         self.create_ingredients(instance, ingredients_data)
 
         instance.save()
