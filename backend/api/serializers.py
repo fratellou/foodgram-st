@@ -250,32 +250,40 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
         }
 
     def validate(self, data):
-        required_fields = ['name', 'text', 'cooking_time', 'ingredients']
-        for field in required_fields:
-            if not data.get(field):
-                raise serializers.ValidationError(
-                    f'{field} - Обязательное поле.'
-                )
+        if self.context['request'].method == 'POST':
+            required_fields = ['name', 'text', 'cooking_time', 'ingredients']
+            for field in required_fields:
+                if not data.get(field):
+                    raise serializers.ValidationError(
+                        f'{field} - Обязательное поле.'
+                    )
 
-        ingredients = data.get('ingredients', [])
-        ingredient_ids = [ingredient['id'] for ingredient in ingredients]
-
-        if len(ingredient_ids) != len(set(ingredient_ids)):
+        if 'cooking_time' in data and data['cooking_time'] <= 0:
             raise serializers.ValidationError(
-                'Ингредиенты должны быть уникальны.'
+                'Время приготовления должно быть больше 0'
             )
 
-        existing_ingredients = Ingredient.objects.filter(id__in=ingredient_ids)
-        if len(existing_ingredients) != len(ingredient_ids):
-            raise serializers.ValidationError(
-                'Указаны несуществующие ингредиенты'
-            )
+        if 'ingredients' in data:
+            ingredients = data['ingredients']
+            ingredient_ids = [ingredient['id'] for ingredient in ingredients]
 
-        for ingredient in ingredients:
-            if int(ingredient.get('amount', 0)) <= 0:
+            if len(ingredient_ids) != len(set(ingredient_ids)):
                 raise serializers.ValidationError(
-                    'Количество ингредиента должно быть больше 0'
+                    'Ингредиенты должны быть уникальны.'
                 )
+
+            existing_ingredients = Ingredient.objects.filter(
+                id__in=ingredient_ids)
+            if len(existing_ingredients) != len(ingredient_ids):
+                raise serializers.ValidationError(
+                    'Указаны несуществующие ингредиенты'
+                )
+
+            for ingredient in ingredients:
+                if int(ingredient.get('amount', 0)) <= 0:
+                    raise serializers.ValidationError(
+                        'Количество ингредиента должно быть больше 0'
+                    )
 
         return data
 
@@ -289,13 +297,6 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
                 amount=ingredient['amount']
             ))
         RecipeIngredient.objects.bulk_create(ingredients)
-        # RecipeIngredient.objects.bulk_create([
-        #     RecipeIngredient(
-        #         recipe=recipe,
-        #         ingredient_id=ingredient['id'],
-        #         amount=ingredient['amount']
-        #     ) for ingredient in ingredients_data
-        # ])
 
     @transaction.atomic
     def create(self, validated_data):
@@ -309,16 +310,20 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
 
     @transaction.atomic
     def update(self, instance, validated_data):
-        ingredients_data = validated_data.pop('ingredients')
+        ingredients_data = validated_data.pop('ingredients', None)
 
         instance.name = validated_data.get('name', instance.name)
         instance.text = validated_data.get('text', instance.text)
-        instance.cooking_time = validated_data.get('cooking_time',
-                                                   instance.cooking_time)
-        instance.image = validated_data.get('image', instance.image)
+        instance.cooking_time = validated_data.get(
+            'cooking_time', instance.cooking_time
+        )
 
-        instance.recipe_ingredients.all().delete()
-        self.create_ingredients(instance, ingredients_data)
+        if 'image' in validated_data:
+            instance.image = validated_data['image']
+
+        if ingredients_data is not None:
+            instance.recipe_ingredient.all().delete()
+            self.create_ingredients(instance, ingredients_data)
 
         instance.save()
         return instance

@@ -1,4 +1,4 @@
-from rest_framework import viewsets, status
+from rest_framework import viewsets, status, serializers
 from rest_framework.response import Response
 from .serializers import (
     IngredientSerializer,
@@ -289,3 +289,38 @@ class RecipeViewSet(viewsets.ModelViewSet):
             )
         except Http404:
             raise NotFound(detail="Страница не найдена.")
+
+    def update(self, request, *args, **kwargs):
+        try:
+            partial = kwargs.pop('partial', True)
+            instance = self.get_object()
+
+            if instance.author != request.user:
+                return Response(
+                    {'error': 'Вы можете редактировать только свои рецепты'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+
+            serializer = self.get_serializer(
+                instance,
+                data=request.data,
+                partial=partial
+            )
+            serializer.is_valid(raise_exception=True)
+            self.perform_update(serializer)
+
+            return Response(serializer.data)
+
+        except serializers.ValidationError as e:
+            return Response(
+                {'errors': e.detail},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        except Exception as e:
+            return Response(
+                {'error': f'Ошибка сервера: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+    def perform_update(self, serializer):
+        serializer.save()
