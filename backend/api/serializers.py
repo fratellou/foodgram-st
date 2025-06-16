@@ -61,7 +61,8 @@ class UserSerializer(UserSerializer):
         request = self.context.get('request')
         if request and request.user.is_authenticated:
             return Subscribe.objects.filter(
-                user=request.user, author=obj
+                user=request.user,
+                author=obj
             ).exists()
         return False
 
@@ -206,20 +207,36 @@ class ShoppingCartSerializer(serializers.ModelSerializer):
 
 
 class SubscribeSerializer(serializers.ModelSerializer):
+    id = serializers.ReadOnlyField(source='author.id')
+    email = serializers.ReadOnlyField(source='author.email')
+    username = serializers.ReadOnlyField(source='author.username')
+    first_name = serializers.ReadOnlyField(source='author.first_name')
+    last_name = serializers.ReadOnlyField(source='author.last_name')
+    is_subscribed = serializers.SerializerMethodField()
     recipes = serializers.SerializerMethodField()
     recipes_count = serializers.SerializerMethodField()
+    avatar = serializers.ImageField(source='author.avatar', read_only=True)
 
     class Meta:
         model = Subscribe
         fields = ('id', 'email', 'username', 'first_name', 'last_name',
                   'is_subscribed', 'avatar', 'recipes', 'recipes_count')
 
+    def get_is_subscribed(self, obj):
+        return True  # В этом контексте всегда True
+
     def get_recipes(self, obj):
         request = self.context.get('request')
         recipes = obj.author.recipes.all()
+        recipes_limit = request.query_params.get('recipes_limit')
+        if recipes_limit and recipes_limit.isdigit():
+            recipes = recipes[:int(recipes_limit)]
         return RecipeShortSerializer(
             recipes, many=True, context={'request': request}
         ).data
+
+    def get_recipes_count(self, obj):
+        return obj.author.recipes.count()
 
 
 class RecipeShortSerializer(serializers.ModelSerializer):
@@ -330,3 +347,18 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         return RecipeSerializer(instance, context=self.context).data
+
+
+class ShoppingCartCountSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ShoppingCart
+        fields = ('id',)
+
+    def to_representation(self, instance):
+        return {
+            'id': instance.recipe.id,
+            'name': instance.recipe.name,
+            'image': instance.recipe.image.url if
+            instance.recipe.image else None,
+            'cooking_time': instance.recipe.cooking_time
+        }

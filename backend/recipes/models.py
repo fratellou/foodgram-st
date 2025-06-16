@@ -20,7 +20,8 @@ class Ingredient(models.Model):
 
 class Recipe(models.Model):
     author = models.ForeignKey(
-        User, verbose_name="Автор", on_delete=models.CASCADE)
+        User, verbose_name="Автор", on_delete=models.CASCADE,
+        related_name='recipes')
     name = models.CharField(max_length=128, verbose_name='Название')
     image = models.ImageField(verbose_name='Картинка',
                               upload_to='recipes/',

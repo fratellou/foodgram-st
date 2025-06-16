@@ -8,7 +8,8 @@ from .serializers import (
     RecipeSerializer,
     RecipeShortSerializer,
     RecipeCreateSerializer,
-    Base64ImageField
+    Base64ImageField,
+    ShoppingCartCountSerializer
 )
 from recipes.models import (
     Ingredient,
@@ -95,12 +96,13 @@ class UserViewSet(DjoserUserViewSet):
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
-            Subscribe.objects.create(user=user, author=author)
+            Subscribe.objects.create(user=request.user, author=author)
             serializer = SubscribeSerializer(
-                author,
+                Subscribe.objects.get(
+                    user=request.user, author=author),
                 context={'request': request}
             )
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            return Response(serializer.data, status=201)
 
         # DELETE method
         subscription = Subscribe.objects.filter(user=user, author=author)
@@ -116,10 +118,8 @@ class UserViewSet(DjoserUserViewSet):
     @action(detail=False, methods=['get'],
             permission_classes=[IsAuthenticated])
     def subscriptions(self, request):
-        subscribed_authors = User.objects.filter(
-            authors__user=request.user
-        )
-        page = self.paginate_queryset(subscribed_authors)
+        subscriptions = Subscribe.objects.filter(user=request.user)
+        page = self.paginate_queryset(subscriptions)
         serializer = SubscribeSerializer(
             page,
             many=True,
@@ -223,6 +223,19 @@ class RecipeViewSet(viewsets.ModelViewSet):
         favorite.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
+    @action(detail=False, methods=['get'],
+            permission_classes=[IsAuthenticated])
+    def shopping_cart_list(self, request):
+        shopping_cart = ShoppingCart.objects.filter(user=request.user)
+        serializer = ShoppingCartCountSerializer(shopping_cart, many=True)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['get'],
+            permission_classes=[IsAuthenticated])
+    def shopping_cart_count(self, request):
+        count = ShoppingCart.objects.filter(user=request.user).count()
+        return Response({'count': count})
+
     @action(detail=True, methods=['post', 'delete'],
             permission_classes=[IsAuthenticated])
     def shopping_cart(self, request, pk=None):
@@ -236,11 +249,12 @@ class RecipeViewSet(viewsets.ModelViewSet):
                     status=status.HTTP_400_BAD_REQUEST
                 )
             ShoppingCart.objects.create(user=user, recipe=recipe)
-            serializer = RecipeShortSerializer(
-                recipe,
-                context={'request': request}
+
+            count = ShoppingCart.objects.filter(user=user).count()
+            return Response(
+                {'count': count},
+                status=status.HTTP_201_CREATED
             )
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
 
         cart_item = ShoppingCart.objects.filter(user=user, recipe=recipe)
         if not cart_item.exists():
@@ -249,7 +263,12 @@ class RecipeViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
         cart_item.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+
+        count = ShoppingCart.objects.filter(user=user).count()
+        return Response(
+            {'count': count},
+            status=status.HTTP_200_OK
+        )
 
     @action(detail=False, methods=['get'],
             permission_classes=[IsAuthenticated])
