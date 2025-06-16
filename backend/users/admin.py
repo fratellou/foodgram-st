@@ -51,11 +51,11 @@ class CustomUserAdmin(UserAdmin):
 
     @admin.display(description='Подписчики')
     def subscribers_count(self, obj):
-        return obj.authors.count()
+        return obj.subscribers.count()
 
     @admin.display(description='Подписки')
     def subscriptions_count(self, obj):
-        return obj.subscribed_users.count()
+        return obj.subscriptions.count()
 
 
 @admin.register(Subscribe)
