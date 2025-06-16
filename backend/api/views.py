@@ -7,7 +7,8 @@ from .serializers import (
     SubscribeSerializer,
     RecipeSerializer,
     RecipeShortSerializer,
-    RecipeCreateSerializer
+    RecipeCreateSerializer,
+    Base64ImageField
 )
 from recipes.models import (
     Ingredient,
@@ -129,8 +130,18 @@ class UserViewSet(DjoserUserViewSet):
     @action(detail=True, methods=['put', 'delete'],
             permission_classes=[IsAuthenticated])
     def avatar(self, request, id=None):
-        user = request.user
-        if id != str(user.id):
+        if id == "me":
+            user = request.user
+        else:
+            try:
+                user = User.objects.get(id=id)
+            except User.DoesNotExist:
+                return Response(
+                    {'error': 'Пользователь не найден'},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+
+        if user != request.user:
             return Response(
                 {'error': 'Вы можете изменять только свой аватар'},
                 status=status.HTTP_403_FORBIDDEN
@@ -143,22 +154,32 @@ class UserViewSet(DjoserUserViewSet):
                     status=status.HTTP_400_BAD_REQUEST
                 )
             user.avatar.delete()
+            user.avatar = None
             user.save()
             return Response(status=status.HTTP_204_NO_CONTENT)
 
         # PUT method
-        if 'avatar' not in request.data:
+        if 'avatar' not in request.data or not request.data['avatar']:
             return Response(
                 {'error': 'Отсутствует файл аватара'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        user.avatar = request.data['avatar']
-        user.save()
-        return Response(
-            {'avatar': user.avatar.url},
-            status=status.HTTP_200_OK
-        )
+        try:
+            serializer = Base64ImageField()
+            avatar_file = serializer.to_internal_value(request.data['avatar'])
+            serializer.validate(avatar_file)
+            user.avatar = avatar_file
+            user.save()
+            return Response(
+                {'avatar': user.avatar.url},
+                status=status.HTTP_200_OK
+            )
+        except Exception as e:
+            return Response(
+                {'error': f'Ошибка при сохранении файла: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 
 class RecipeViewSet(viewsets.ModelViewSet):

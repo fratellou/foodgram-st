@@ -21,6 +21,23 @@ class Base64ImageField(serializers.ImageField):
             data = ContentFile(base64.b64decode(imgstr), name='temp.' + ext)
         return super().to_internal_value(data)
 
+    def validate(self, value):
+        max_size = 5 * 1024 * 1024
+        if value.size > max_size:
+            raise serializers.ValidationError(
+                f"Размер файла не должен превышать {max_size//(1024*1024)}MB"
+            )
+
+        valid_extensions = ['jpg', 'jpeg', 'png', 'gif']
+        ext = value.name.split('.')[-1].lower()
+        if ext not in valid_extensions:
+            raise serializers.ValidationError(
+                "Неподдерживаемый формат файла."
+                + f"Допустимые форматы: {', '.join(valid_extensions)}"
+            )
+
+        return value
+
 
 class UserSerializer(UserSerializer):
     is_subscribed = serializers.SerializerMethodField()
