@@ -40,11 +40,6 @@ class User(AbstractUser):
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username', 'last_name', 'first_name']
 
-    @property
-    def recipes(self):
-        from recipes.models import Recipe
-        return Recipe.objects.filter(author=self)
-
     class Meta:
         ordering = ['id']
         verbose_name = 'Пользователь'
