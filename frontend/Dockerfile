@@ -5,14 +5,12 @@ COPY package*.json ./
 RUN npm install
 COPY . ./
 RUN npm run build
-CMD cp -r build result_build
+
 
 FROM nginx:1.22.1
 
-WORKDIR /nginx
-
-COPY --from=builder /app/build/index.html /nginx/index.html
-COPY --from=builder /app/build/static /nginx/static
+COPY --from=builder /app/build /usr/share/nginx/html
 COPY ./nginx.conf /etc/nginx/conf.d/default.conf
+RUN mkdir -p /app/static /app/media
 
 EXPOSE 80
