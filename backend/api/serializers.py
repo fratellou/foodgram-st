@@ -223,7 +223,7 @@ class SubscribeSerializer(serializers.ModelSerializer):
                   'is_subscribed', 'avatar', 'recipes', 'recipes_count')
 
     def get_is_subscribed(self, obj):
-        return True  # В этом контексте всегда True
+        return True
 
     def get_recipes(self, obj):
         request = self.context.get('request')

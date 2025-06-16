@@ -6,10 +6,10 @@ from .serializers import (
     UserCreateSerializer,
     SubscribeSerializer,
     RecipeSerializer,
-    RecipeShortSerializer,
     RecipeCreateSerializer,
     Base64ImageField,
-    ShoppingCartCountSerializer
+    ShoppingCartCountSerializer,
+    RecipeShortSerializer
 )
 from recipes.models import (
     Ingredient,
@@ -158,7 +158,6 @@ class UserViewSet(DjoserUserViewSet):
             user.save()
             return Response(status=status.HTTP_204_NO_CONTENT)
 
-        # PUT method
         if 'avatar' not in request.data or not request.data['avatar']:
             return Response(
                 {'error': 'Отсутствует файл аватара'},
@@ -195,6 +194,17 @@ class RecipeViewSet(viewsets.ModelViewSet):
             return RecipeSerializer
         return RecipeCreateSerializer
 
+    def get_queryset(self):
+        queryset = super().get_queryset()
+
+        is_favorited = self.request.query_params.get('is_favorited')
+        if is_favorited == '1':
+            user = self.request.user
+            if user.is_authenticated:
+                return queryset.filter(favorite_recipe__user=user)
+
+        return queryset
+
     @action(detail=True, methods=['post', 'delete'],
             permission_classes=[IsAuthenticated])
     def favorite(self, request, pk=None):
@@ -222,6 +232,25 @@ class RecipeViewSet(viewsets.ModelViewSet):
             )
         favorite.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @action(detail=False, methods=['get'],
+            permission_classes=[IsAuthenticated])
+    def favorites(self, request):
+        favorite_recipes = Recipe.objects.filter(
+            favorite_recipe__user=request.user
+        )
+
+        page = self.paginate_queryset(favorite_recipes)
+        if page is not None:
+            serializer = RecipeSerializer(
+                page, many=True, context={'request': request}
+            )
+            return self.get_paginated_response(serializer.data)
+
+        serializer = RecipeSerializer(
+            favorite_recipes, many=True, context={'request': request}
+        )
+        return Response(serializer.data)
 
     @action(detail=False, methods=['get'],
             permission_classes=[IsAuthenticated])
