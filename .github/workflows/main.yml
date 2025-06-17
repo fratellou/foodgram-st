@@ -1,55 +1,110 @@
-name: CI/CD Pipeline
+# .github/workflows/main.yml
+name: Main Foodgram workflow
 
 on:
   push:
-    branches: [ main, master ]
-  pull_request:
-    branches: [ main, master ]
+    branches:
+      - main
 
 jobs:
-  lint-and-test:
+  tests:
     runs-on: ubuntu-latest
+
     services:
       postgres:
-        image: postgres:13
+        image: postgres:13.10
         env:
-          POSTGRES_USER: test_user
-          POSTGRES_PASSWORD: test_password
-          POSTGRES_DB: test_db
+          POSTGRES_USER: foodgram_user
+          POSTGRES_PASSWORD: foodgram_password
+          POSTGRES_DB: foodgram
         ports:
           - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
-
-    - name: Set up Python 3.10
-      uses: actions/setup-python@v4
+    - name: Check out code
+      uses: actions/checkout@v4
+    - name: Set up Python
+      uses: actions/setup-python@v5
       with:
         python-version: "3.10"
-
     - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip
-        pip install -r backend/requirements.txt
-        pip install flake8 pytest
-
-    - name: Lint with flake8
+        python -m pip install --upgrade pip 
+        pip install ruff==0.8.0
+        pip install -r ./backend/foodgram/requirements.txt
+        pip install django-filter==23.1
+        pip install psycopg2-binary==2.9.3
+        pip install drf_extra_fields
+        pip install matplotlib
+    - name: Lint with ruff and run django tests
+      env:
+        POSTGRES_USER: foodgram_user
+        POSTGRES_PASSWORD: foodgram_password
+        POSTGRES_DB: foodgram
+        DB_HOST: 127.0.0.1
+        DB_PORT: 5432
       run: |
-        flake8 backend --count --select=E9,F63,F7,F82 --show-source --statistics
-        flake8 backend --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+        python -m ruff check backend/
+        cd backend/
 
-    - name: Run security checks
-      run: |
-        pip install safety
-        safety check -r backend/requirements.txt --full-report
+  build_and_push_to_docker_hub:
+    runs-on: ubuntu-latest
+    needs: tests
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Login to Docker
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+          
+      - name: Push to DockerHub
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend/foodgram/
+          push: true
+          tags: ${{ secrets.DOCKER_USERNAME }}/infra-backend:latest 
 
-    - name: Run migrations check
-      run: |
-        cd backend
-        python manage.py makemigrations --check --dry-run
+  build_frontend_and_push_to_docker_hub:
+    name: Push frontend Docker image to DockerHub
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Login to Docker 
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Push to DockerHub
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend/
+          push: true
+          tags: ${{ secrets.DOCKER_USERNAME }}/infra-frontend:latest
+
+  build_gateway_and_push_to_docker_hub:
+    name: Push gateway Docker image to DockerHub
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Login to Docker 
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Push to DockerHub
+        uses: docker/build-push-action@v5
+        with:
+          context: ./infra/
+          push: true
+          tags: ${{ secrets.DOCKER_USERNAME }}/infra-gateway:latest 
