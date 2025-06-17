@@ -1,4 +1,4 @@
-from rest_framework import viewsets, status, serializers
+from rest_framework import viewsets, status, serializers, filters
 from rest_framework.response import Response
 from .serializers import (
     IngredientSerializer,
@@ -23,7 +23,7 @@ from rest_framework.permissions import (
 )
 from .permission import IsAuthorOrReadOnly
 from rest_framework.pagination import PageNumberPagination
-from django_filters.rest_framework import DjangoFilterBackend
+# from django_filters.rest_framework import DjangoFilterBackend
 from django.contrib.auth import get_user_model
 from django.http import HttpResponse, Http404
 from rest_framework.decorators import action
@@ -48,7 +48,7 @@ class StandardResultsSetPagination(PageNumberPagination):
 class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
-    filter_backends = [DjangoFilterBackend]
+    filter_backends = [filters.SearchFilter]
     permission_classes = [AllowAny]
     search_fields = ['^name']
     pagination_class = None
@@ -194,8 +194,17 @@ class RecipeViewSet(viewsets.ModelViewSet):
             return RecipeSerializer
         return RecipeCreateSerializer
 
+    def get_permissions(self):
+        if self.action == 'create':
+            return [IsAuthenticated()]
+        return [IsAuthorOrReadOnly()]
+
     def get_queryset(self):
         queryset = super().get_queryset()
+
+        author_id = self.request.query_params.get('author')
+        if author_id:
+            queryset = queryset.filter(author__id=author_id)
 
         is_favorited = self.request.query_params.get('is_favorited')
         if is_favorited == '1':
@@ -342,12 +351,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
         try:
             partial = kwargs.pop('partial', True)
             instance = self.get_object()
-
-            if instance.author != request.user:
-                return Response(
-                    {'error': 'Вы можете редактировать только свои рецепты'},
-                    status=status.HTTP_403_FORBIDDEN
-                )
 
             serializer = self.get_serializer(
                 instance,

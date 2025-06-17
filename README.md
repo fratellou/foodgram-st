@@ -9,10 +9,10 @@
 
 ## Развертывание проекта
 
-### 1. Prod
+### Prod
 1. Установите на сервере docker и docker-compose.
 2. Создайте файл **/infra/.env**. Шаблон для заполнения файла нахоится в **/infra/.env.example**.
-3. Запустите контейнеры, находясь в папке **/infra**:
+3. Запустите контейнеры, находясь в папке **/infra**, командой:
 ```
 docker compose up -d --buld
 
@@ -25,6 +25,4 @@ sudo docker compose up -d --buld
 docker-compose exec backend python manage.py createsuperuser
 ```
 
-*По адресу http://localhost фронтенд веб-приложения, а по адресу http://localhost/api/docs/ — спецификация API.*
-
-### 2. DEV
+*Запуск фронтенда веб-приложения по адресу http://localhost*
