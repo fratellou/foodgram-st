@@ -41,7 +41,7 @@ services:
       - "8000:8000"
     restart: always
     volumes:
-      - static_volume:/app/static
+      - static_volume:/app/django_static
       - media_volume:/app/media
     depends_on:
       db:
@@ -53,6 +53,8 @@ services:
     volumes:
       - ../frontend/:/app/result_build/
       - media_volume:/app/media/
+      - ../docs/:/usr/share/nginx/html/api/docs/
+      - static_volume:/app/django_static
     depends_on:
       - backend
     ports:

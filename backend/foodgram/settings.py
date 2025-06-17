@@ -132,8 +132,8 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = '/static/'
-STATIC_ROOT = '/app/static/'
+STATIC_URL = '/django_static/'
+STATIC_ROOT = '/app/django_static/'
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = '/app/media/'
@@ -166,3 +166,7 @@ DJOSER = {
 AUTH_USER_MODEL = "users.User"
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+STATICFILES_DIRS = [
+    BASE_DIR / 'static',
+]
