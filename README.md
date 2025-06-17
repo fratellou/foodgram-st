@@ -26,3 +26,9 @@ docker-compose exec backend python manage.py createsuperuser
 ```
 
 *Запуск фронтенда веб-приложения по адресу http://localhost , а по адресу http://localhost/api/docs/ — спецификация API.*
+
+```
+Образы на Docker Hub:
+https://hub.docker.com/r/frate11o/infra-frontend
+https://hub.docker.com/r/frate11o/infra-backend
+```
