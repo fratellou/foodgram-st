@@ -4,13 +4,20 @@ from django.core.validators import RegexValidator
 
 
 class User(AbstractUser):
+    EMAIL_MAX_LENGTH = 254
+    USERNAME_MAX_LENGTH = 150
+    NAME_MAX_LENGTH = 150
+    AVATAR_UPLOAD_TO = 'avatars/'
+    AVATAR_MAX_LENGTH = 500
+
     email = models.EmailField(
-        max_length=254, unique=True, verbose_name="Адрес электронной почты"
+        max_length=EMAIL_MAX_LENGTH, unique=True,
+        verbose_name="Адрес электронной почты"
     )
 
     username = models.CharField(
         unique=True,
-        max_length=150,
+        max_length=USERNAME_MAX_LENGTH,
         verbose_name="Никнейм",
         validators=[
             RegexValidator(
@@ -23,16 +30,17 @@ class User(AbstractUser):
         ],
     )
 
-    first_name = models.CharField(max_length=150, verbose_name="Имя")
+    first_name = models.CharField(max_length=NAME_MAX_LENGTH,
+                                  verbose_name="Имя")
 
-    last_name = models.CharField(max_length=150, verbose_name="Фамилия")
+    last_name = models.CharField(max_length=NAME_MAX_LENGTH,
+                                 verbose_name="Фамилия")
 
     avatar = models.ImageField(
         verbose_name="Изображение аватара",
         blank=True,
-        null=True,
-        upload_to="avatars/",
-        max_length=500,
+        default='',
+        upload_to=AVATAR_UPLOAD_TO
     )
 
     USERNAME_FIELD = "email"

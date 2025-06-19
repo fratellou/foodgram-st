@@ -17,6 +17,8 @@ User = get_user_model()
 
 
 class Base64ImageField(serializers.ImageField):
+    MAX_SIZE = 5 * 1024 * 1024
+
     def to_internal_value(self, data):
         if isinstance(data, str) and data.startswith("data:image"):
             format, imgstr = data.split(";base64,")
@@ -25,10 +27,10 @@ class Base64ImageField(serializers.ImageField):
         return super().to_internal_value(data)
 
     def validate(self, value):
-        max_size = 5 * 1024 * 1024
-        if value.size > max_size:
+        if value.size > self.MAX_SIZE:
             raise serializers.ValidationError(
-                f"Размер файла не должен превышать {max_size//(1024*1024)}MB"
+                "Размер файла не должен превышать"
+                + f"{self.MAX_SIZE//(1024*1024)}MB"
             )
 
         valid_extensions = ["jpg", "jpeg", "png", "gif"]
@@ -117,13 +119,15 @@ class RecipeIngredientSerializer(serializers.ModelSerializer):
 
 
 class RecipeSerializer(serializers.ModelSerializer):
+    COOKING_MIN_VALUE = 1
+
     author = UserSerializer(read_only=True)
     ingredients = RecipeIngredientSerializer(
         many=True, source="recipe_ingredient")
     is_favorited = serializers.SerializerMethodField()
     is_in_shopping_cart = serializers.SerializerMethodField()
     image = Base64ImageField()
-    cooking_time = serializers.IntegerField(min_value=1)
+    cooking_time = serializers.IntegerField(min_value=COOKING_MIN_VALUE)
 
     class Meta:
         model = Recipe

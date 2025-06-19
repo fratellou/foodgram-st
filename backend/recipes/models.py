@@ -4,10 +4,13 @@ from users.models import User
 
 
 class Ingredient(models.Model):
-    name = models.CharField(max_length=128, unique=True,
+    NAME_MAX_LENGTH = 128
+    MEASUREMENT_MAX_LENGTH = 64
+
+    name = models.CharField(max_length=NAME_MAX_LENGTH, unique=True,
                             verbose_name="Название")
     measurement_unit = models.CharField(
-        max_length=64, verbose_name="Единица измерения")
+        max_length=MEASUREMENT_MAX_LENGTH, verbose_name="Единица измерения")
 
     class Meta:
         ordering = ["name"]
@@ -19,13 +22,17 @@ class Ingredient(models.Model):
 
 
 class Recipe(models.Model):
+    NAME_MAX_LENGTH = 128
+    IMAGE_UPLOAD_TO = "recipes/"
+
     author = models.ForeignKey(
         User, verbose_name="Автор", on_delete=models.CASCADE,
         related_name="recipes"
     )
-    name = models.CharField(max_length=128, verbose_name="Название")
+    name = models.CharField(max_length=NAME_MAX_LENGTH,
+                            verbose_name="Название")
     image = models.ImageField(
-        verbose_name="Картинка", upload_to="recipes/", max_length=500
+        verbose_name="Картинка", upload_to=IMAGE_UPLOAD_TO
     )
     text = models.CharField(verbose_name="Описание")
     ingredients = models.ManyToManyField(
@@ -67,8 +74,8 @@ class RecipeIngredient(models.Model):
     )
 
     class Meta:
-        verbose_name = "Ингридиент в рецепте"
-        verbose_name_plural = "Ингридиенты в рецепте"
+        verbose_name = "Ингредиент в рецепте"
+        verbose_name_plural = "Ингредиенты в рецепте"
         constraints = [
             models.UniqueConstraint(
                 fields=["recipe", "ingredient"],

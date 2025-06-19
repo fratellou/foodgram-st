@@ -26,7 +26,6 @@ from rest_framework.permissions import (
 from .permission import IsAuthorOrReadOnly
 from rest_framework.pagination import PageNumberPagination
 
-# from django_filters.rest_framework import DjangoFilterBackend
 from django.contrib.auth import get_user_model
 from django.http import HttpResponse, Http404
 from rest_framework.decorators import action
@@ -42,10 +41,13 @@ User = get_user_model()
 
 
 class StandardResultsSetPagination(PageNumberPagination):
-    page_size = 6
+    PAGE_SIZE = 6
+    MAX_PAGE_SIZE = 50
+
+    page_size = PAGE_SIZE
     page_size_query_param = "limit"
     page_query_param = "page"
-    max_page_size = 50
+    max_page_size = MAX_PAGE_SIZE
 
 
 class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
