@@ -29,8 +29,9 @@ class RecipeAdmin(admin.ModelAdmin):
         "cooking_time",
         "image_preview",
     )
-    search_fields = ("name", "author__username")
     list_filter = ("author",)
+    search_fields = ("name",)
+    autocomplete_fields = ['author']
     inlines = [RecipeIngredientInline]
     readonly_fields = ("favorites_count",)
 
@@ -65,8 +66,7 @@ class IngredientAdmin(admin.ModelAdmin):
 @admin.register(RecipeIngredient)
 class RecipeIngredientAdmin(admin.ModelAdmin):
     list_display = ("recipe", "ingredient", "amount")
-    search_fields = ("recipe__name", "ingredient__name")
-    list_filter = ("ingredient",)
+    autocomplete_fields = ['recipe', 'ingredient']
 
     def get_queryset(self, request):
         return super().get_queryset(request).select_related('recipe',
@@ -75,8 +75,7 @@ class RecipeIngredientAdmin(admin.ModelAdmin):
 
 class UserRecipeAdminMixin:
     list_display = ("get_user", "get_recipe")
-    search_fields = ("user__username", "recipe__name")
-    list_filter = ("user",)
+    autocomplete_fields = ['user', 'recipe']
 
     def get_queryset(self, request):
         return super().get_queryset(request).select_related('user', 'recipe')
