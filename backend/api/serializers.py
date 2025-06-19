@@ -1,17 +1,19 @@
-from djoser.serializers import UserSerializer
 import base64
-from django.core.files.base import ContentFile
-from rest_framework import serializers
+
 from django.contrib.auth import get_user_model
+from django.core.files.base import ContentFile
+from django.db import transaction
+from djoser.serializers import UserSerializer
+from rest_framework import serializers
+
 from recipes.models import (
+    Favorite,
     Ingredient,
     Recipe,
     RecipeIngredient,
-    Favorite,
-    ShoppingCart
+    ShoppingCart,
 )
 from users.models import Subscribe
-from django.db import transaction
 
 User = get_user_model()
 

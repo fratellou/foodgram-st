@@ -1,41 +1,42 @@
-from rest_framework import viewsets, status, serializers, filters
-from rest_framework.response import Response
-from .serializers import (
-    IngredientSerializer,
-    UserSerializer,
-    UserCreateSerializer,
-    SubscribeSerializer,
-    RecipeSerializer,
-    RecipeCreateSerializer,
-    Base64ImageField,
-    ShoppingCartCountSerializer,
-    RecipeShortSerializer,
-)
-from recipes.models import (
-    Ingredient,
-    ShoppingCart,
-    Recipe,
-    RecipeIngredient,
-    Favorite
-)
+from http import HTTPStatus
+
+from django.contrib.auth import get_user_model
+from django.db.models import Sum
+from django.http import Http404, HttpResponse
+from django.shortcuts import get_object_or_404
+from djoser.views import UserViewSet as DjoserUserViewSet
+from rest_framework import filters, serializers, status, viewsets
+from rest_framework.decorators import action
+from rest_framework.exceptions import NotFound
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import (
     AllowAny,
     IsAuthenticated,
     IsAuthenticatedOrReadOnly,
 )
-from .permission import IsAuthorOrReadOnly
-from rest_framework.pagination import PageNumberPagination
-
-from django.contrib.auth import get_user_model
-from django.http import HttpResponse, Http404
-from rest_framework.decorators import action
-from django.shortcuts import get_object_or_404
-from users.models import Subscribe
-from djoser.views import UserViewSet as DjoserUserViewSet
-from django.db.models import Sum
-from rest_framework.exceptions import NotFound
+from rest_framework.response import Response
 from rest_framework.reverse import reverse
-from http import HTTPStatus
+
+from api.permission import IsAuthorOrReadOnly
+from api.serializers import (
+    Base64ImageField,
+    IngredientSerializer,
+    RecipeCreateSerializer,
+    RecipeSerializer,
+    RecipeShortSerializer,
+    ShoppingCartCountSerializer,
+    SubscribeSerializer,
+    UserCreateSerializer,
+    UserSerializer,
+)
+from recipes.models import (
+    Favorite,
+    Ingredient,
+    Recipe,
+    RecipeIngredient,
+    ShoppingCart,
+)
+from users.models import Subscribe
 
 User = get_user_model()
 
