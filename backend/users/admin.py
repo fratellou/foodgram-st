@@ -1,8 +1,8 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
+from django.db.models import Count
 from django.utils.html import format_html
 
-from recipes.models import Recipe
 from users.models import Subscribe, User
 
 
@@ -39,13 +39,22 @@ class CustomUserAdmin(UserAdmin):
 
     empty_value_display = "-"
 
+    def get_queryset(self, request):
+        queryset = super().get_queryset(request)
+        return queryset.annotate(
+            recipes_count_annotation=Count('recipes', distinct=True),
+            subscribers_count_annotation=Count('subscribers', distinct=True),
+            subscriptions_count_annotation=Count(
+                'subscriptions', distinct=True)
+        )
+
     @admin.display(description="ФИО")
     def full_name(self, obj):
         return f"{obj.first_name} {obj.last_name}"
 
     @admin.display(description="Рецепты")
     def recipes_count(self, obj):
-        return Recipe.objects.filter(author=obj).count()
+        return obj.recipes_count_annotation
 
     @admin.display(description="Аватар")
     def display_avatar(self, obj):
@@ -59,11 +68,11 @@ class CustomUserAdmin(UserAdmin):
 
     @admin.display(description="Подписчики")
     def subscribers_count(self, obj):
-        return obj.subscribers.count()
+        return obj.subscribers_count_annotation
 
     @admin.display(description="Подписки")
     def subscriptions_count(self, obj):
-        return obj.subscriptions.count()
+        return obj.subscriptions_count_annotation
 
 
 @admin.register(Subscribe)
@@ -72,3 +81,6 @@ class SubscribeAdmin(admin.ModelAdmin):
     list_filter = ("user", "author")
     search_fields = ("user__username", "author__username")
     empty_value_display = "-"
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('user', 'author')

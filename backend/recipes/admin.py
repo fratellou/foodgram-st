@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.db.models import Count
 from django.utils.html import format_html
 
 from recipes.models import (
@@ -33,9 +34,15 @@ class RecipeAdmin(admin.ModelAdmin):
     inlines = [RecipeIngredientInline]
     readonly_fields = ("favorites_count",)
 
+    def get_queryset(self, request):
+        queryset = super().get_queryset(request)
+        return queryset.select_related('author').annotate(
+            favorites_count_annotation=Count('favorites')
+        )
+
     @admin.display(description="В избранном")
     def favorites_count(self, obj):
-        return obj.favorites.count()
+        return obj.favorites_count_annotation
 
     @admin.display(description="Изображение")
     def image_preview(self, obj):
@@ -61,11 +68,18 @@ class RecipeIngredientAdmin(admin.ModelAdmin):
     search_fields = ("recipe__name", "ingredient__name")
     list_filter = ("ingredient",)
 
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('recipe',
+                                                            'ingredient')
+
 
 class UserRecipeAdminMixin:
     list_display = ("get_user", "get_recipe")
     search_fields = ("user__username", "recipe__name")
     list_filter = ("user",)
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('user', 'recipe')
 
     @admin.display(description="Пользователь")
     def get_user(self, obj):
