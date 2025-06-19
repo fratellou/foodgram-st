@@ -35,7 +35,7 @@ class RecipeAdmin(admin.ModelAdmin):
 
     @admin.display(description="В избранном")
     def favorites_count(self, obj):
-        return obj.favorite_recipe.count()
+        return obj.favorites.count()
 
     @admin.display(description="Изображение")
     def image_preview(self, obj):
@@ -62,15 +62,25 @@ class RecipeIngredientAdmin(admin.ModelAdmin):
     list_filter = ("ingredient",)
 
 
-@admin.register(Favorite)
-class FavoriteAdmin(admin.ModelAdmin):
-    list_display = ("user", "recipe")
+class UserRecipeAdminMixin:
+    list_display = ("get_user", "get_recipe")
     search_fields = ("user__username", "recipe__name")
     list_filter = ("user",)
+
+    @admin.display(description="Пользователь")
+    def get_user(self, obj):
+        return obj.user.username
+
+    @admin.display(description="Рецепт")
+    def get_recipe(self, obj):
+        return obj.recipe.name
+
+
+@admin.register(Favorite)
+class FavoriteAdmin(UserRecipeAdminMixin, admin.ModelAdmin):
+    pass
 
 
 @admin.register(ShoppingCart)
-class ShoppingCartAdmin(admin.ModelAdmin):
-    list_display = ("user", "recipe")
-    search_fields = ("user__username", "recipe__name")
-    list_filter = ("user",)
+class ShoppingCartAdmin(UserRecipeAdminMixin, admin.ModelAdmin):
+    pass

@@ -187,7 +187,7 @@ class UserViewSet(DjoserUserViewSet):
 
 class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.select_related("author").prefetch_related(
-        "recipe_ingredient__ingredient"
+        "recipe_ingredients__ingredient"
     )
     permission_classes = [IsAuthorOrReadOnly]
     pagination_class = StandardResultsSetPagination
@@ -214,7 +214,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         if is_favorited == "1":
             user = self.request.user
             if user.is_authenticated:
-                return queryset.filter(favorite_recipe__user=user)
+                return queryset.filter(favorites__user=user)
 
         return queryset
 
@@ -250,7 +250,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
             permission_classes=[IsAuthenticated])
     def favorites(self, request):
         favorite_recipes = Recipe.objects.filter(
-            favorite_recipe__user=request.user)
+            favorite__user=request.user)
 
         page = self.paginate_queryset(favorite_recipes)
         if page is not None:
@@ -311,7 +311,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def download_shopping_cart(self, request):
         ingredients = (
             RecipeIngredient.objects.filter(
-                recipe__shopping_recipe__user=request.user)
+                recipe__shopping_carts__user=request.user)
             .values("ingredient__name", "ingredient__measurement_unit")
             .annotate(total_amount=Sum("amount"))
             .order_by("ingredient__name")

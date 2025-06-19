@@ -125,7 +125,7 @@ class RecipeSerializer(serializers.ModelSerializer):
 
     author = UserSerializer(read_only=True)
     ingredients = RecipeIngredientSerializer(
-        many=True, source="recipe_ingredient")
+        many=True, source="recipe_ingredients")
     is_favorited = serializers.SerializerMethodField()
     is_in_shopping_cart = serializers.SerializerMethodField()
     image = Base64ImageField()
@@ -148,13 +148,13 @@ class RecipeSerializer(serializers.ModelSerializer):
     def get_is_favorited(self, obj):
         user = self.context["request"].user
         if user.is_authenticated:
-            return obj.favorite_recipe.filter(user=user).exists()
+            return obj.favorites.filter(user=user).exists()
         return False
 
     def get_is_in_shopping_cart(self, obj):
         user = self.context["request"].user
         if user.is_authenticated:
-            return obj.shopping_recipe.filter(user=user).exists()
+            return obj.shopping_carts.filter(user=user).exists()
         return False
 
     def validate(self, attrs):
@@ -180,7 +180,7 @@ class RecipeSerializer(serializers.ModelSerializer):
 
         return RecipeIngredient.objects.bulk_create(
             RecipeIngredient(
-                recipe=recipe, ingredient=ingredient["id"],
+                recipe=recipe, ingredient_id=ingredient["id"],
                 amount=ingredient["amount"]
             )
             for ingredient in ingredients
@@ -364,7 +364,7 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
             instance.image = validated_data["image"]
 
         if ingredients_data is not None:
-            instance.recipe_ingredient.all().delete()
+            instance.recipe_ingredients.all().delete()
             self.create_ingredients(instance, ingredients_data)
 
         instance.save()
