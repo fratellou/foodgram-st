@@ -47,7 +47,6 @@ class User(AbstractUser):
     REQUIRED_FIELDS = ["username", "last_name", "first_name"]
 
     class Meta:
-        ordering = ["id"]
         verbose_name = "Пользователь"
         verbose_name_plural = "Пользователи"
 
@@ -76,7 +75,6 @@ class Subscribe(models.Model):
             models.UniqueConstraint(
                 fields=["user", "author"], name="unique_subscribe")
         ]
-        ordering = ["id"]
 
     def __str__(self):
         return f"{self.user.username} подписан на {self.author.username}"

@@ -1,11 +1,18 @@
-from django.core.management.base import BaseCommand
-from recipes.models import Ingredient
 import json
+import os
+from pathlib import Path
+
+from django.core.management.base import BaseCommand
+
+from recipes.models import Ingredient
 
 
 class Command(BaseCommand):
+    help = 'Загрузка ингредиентов из JSON файла'
+
     def handle(self, *args, **options):
-        file_path = "../../data/ingredients.json"
+        base_dir = Path(__file__).resolve().parent.parent.parent.parent.parent
+        file_path = os.path.join(base_dir, 'data', 'ingredients.json')
 
         try:
             with open(file_path, "r", encoding="utf-8") as file:

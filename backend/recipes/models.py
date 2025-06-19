@@ -1,5 +1,6 @@
-from django.core.validators import MinValueValidator
+from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
+from django.utils import timezone
 
 from users.models import User
 
@@ -14,7 +15,6 @@ class Ingredient(models.Model):
         max_length=MEASUREMENT_MAX_LENGTH, verbose_name="Единица измерения")
 
     class Meta:
-        ordering = ["name"]
         verbose_name = "Ингредиент"
         verbose_name_plural = "Ингредиенты"
 
@@ -42,15 +42,26 @@ class Recipe(models.Model):
         through="RecipeIngredient",
         related_name="recipe",
     )
-    cooking_time = models.IntegerField(
+    cooking_time = models.PositiveSmallIntegerField(
         verbose_name="Время приготовления (в минутах)",
-        validators=[MinValueValidator(1)],
+        validators=[
+            MinValueValidator(
+                1, message="Время должно быть не менее 1 минуты"),
+            MaxValueValidator(1440,
+                              message="Время не должно превышать"
+                              + "24 часа (1440 минут)")],
+    )
+
+    pub_date = models.DateTimeField(
+        verbose_name="Дата публикации",
+        default=timezone.now,
+        db_index=True
     )
 
     class Meta:
         verbose_name = "Рецепт"
         verbose_name_plural = "Рецепты"
-        ordering = ["name"]
+        ordering = ['-pub_date']
 
     def __str__(self):
         return self.name
@@ -69,9 +80,14 @@ class RecipeIngredient(models.Model):
         on_delete=models.CASCADE,
         related_name="ingredient_recipe",
     )
-    amount = models.IntegerField(
+    amount = models.PositiveSmallIntegerField(
         verbose_name="Колличество ингредиента в рецепте",
-        validators=[MinValueValidator(1)],
+        validators=[
+            MinValueValidator(
+                1, message="Количество ингредиентов должно быть не менее 1"),
+            MaxValueValidator(
+                100, message="Количество ингредиентов не должно превышать 100")
+        ],
     )
 
     class Meta:
@@ -83,10 +99,6 @@ class RecipeIngredient(models.Model):
                 name="unique_recipe_ingredient"
             )
         ]
-        ordering = (
-            "recipe",
-            "ingredient",
-        )
 
     def __str__(self):
         return (
@@ -119,7 +131,6 @@ class Favorite(models.Model):
                 fields=["user", "recipe"], name="unique_user_recipe_favorite"
             )
         ]
-        ordering = ["id"]
 
     def __str__(self):
         return f"{self.user.username} в избранном " f"{self.recipe.name}"
@@ -147,7 +158,6 @@ class ShoppingCart(models.Model):
                 fields=["user", "recipe"], name="unique_shopping_cart"
             )
         ]
-        ordering = ["id"]
 
     def __str__(self):
         return f"{self.user.username} в корзине " f"{self.recipe.name}"

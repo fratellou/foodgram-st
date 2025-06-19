@@ -19,7 +19,7 @@ class CustomUserAdmin(UserAdmin):
         "subscriptions_count",
     )
 
-    search_fields = ("username", "email")
+    search_fields = ("username", "email", "first_name", "last_name")
 
     fieldsets = (
         (None, {"fields": ("email", "username", "password")}),
