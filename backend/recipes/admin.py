@@ -49,8 +49,8 @@ class RecipeAdmin(admin.ModelAdmin):
     def image_preview(self, obj):
         if obj.image:
             return format_html(
-                '<img src="{}" width="50" height="50"'
-                + 'style="object-fit: cover;" />',
+                ('<img src="{}" width="50" height="50"'
+                 'style="object-fit: cover;" />'),
                 obj.image.url,
             )
         return "-"

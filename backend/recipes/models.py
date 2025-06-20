@@ -50,8 +50,8 @@ class Recipe(models.Model):
             MinValueValidator(
                 1, message="Время должно быть не менее 1 минуты"),
             MaxValueValidator(1440,
-                              message="Время не должно превышать"
-                              + "24 часа (1440 минут)")],
+                              message=("Время не должно превышать"
+                                       "24 часа (1440 минут)"))],
     )
 
     pub_date = models.DateTimeField(
@@ -133,8 +133,8 @@ class BaseUserRecipeModel(models.Model):
         ]
 
     def __str__(self):
-        return f"{self.user.username} в {self._meta.verbose_name}" + \
-            f"{self.recipe.name}"
+        return (f"{self.user.username} в {self._meta.verbose_name}"
+                f"{self.recipe.name}")
 
 
 class Favorite(BaseUserRecipeModel):

@@ -60,8 +60,8 @@ class CustomUserAdmin(UserAdmin):
     def display_avatar(self, obj):
         if obj.avatar:
             return format_html(
-                '<img src="{}" width="50" height="50" '
-                'style="border-radius: 50%; object-fit: cover;" />',
+                ('<img src="{}" width="50" height="50" '
+                 'style="border-radius: 50%; object-fit: cover;" />'),
                 obj.avatar.url,
             )
         return self.empty_value_display

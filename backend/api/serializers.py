@@ -30,16 +30,16 @@ class Base64ImageField(serializers.ImageField):
     def validate(self, value):
         if value.size > MAX_IMAGE_SIZE:
             raise serializers.ValidationError(
-                "Размер файла не должен превышать"
-                + f"{self.MAX_IMAGE_SIZE//(1024*1024)}MB"
+                ("Размер файла не должен превышать"
+                 f"{self.MAX_IMAGE_SIZE//(1024*1024)}MB")
             )
 
         valid_extensions = ["jpg", "jpeg", "png", "gif"]
         ext = value.name.split(".")[-1].lower()
         if ext not in valid_extensions:
             raise serializers.ValidationError(
-                "Неподдерживаемый формат файла."
-                + f"Допустимые форматы: {', '.join(valid_extensions)}"
+                ("Неподдерживаемый формат файла."
+                 f"Допустимые форматы: {', '.join(valid_extensions)}")
             )
 
         return value
