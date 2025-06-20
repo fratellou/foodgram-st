@@ -4,12 +4,11 @@ from io import BytesIO
 from django.contrib.auth import get_user_model
 from django.db import models
 from django.db.models import Count, Exists, OuterRef, Sum
-from django.http import Http404, HttpResponse
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from djoser.views import UserViewSet as DjoserUserViewSet
 from rest_framework import filters, serializers, status, viewsets
 from rest_framework.decorators import action
-from rest_framework.exceptions import NotFound
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import (
     AllowAny,
@@ -167,7 +166,6 @@ class UserViewSet(DjoserUserViewSet):
                     status=status.HTTP_400_BAD_REQUEST
                 )
             user.avatar.delete()
-            user.save()
             return Response(status=status.HTTP_204_NO_CONTENT)
 
         if 'avatar' not in request.data or not request.data['avatar']:
@@ -211,9 +209,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        queryset = Recipe.objects.select_related('author').prefetch_related(
-            'recipe_ingredients__ingredient'
-        )
+        queryset = super().get_queryset()
 
         if user.is_authenticated:
             favorite_subquery = Favorite.objects.filter(
@@ -235,14 +231,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
                 is_in_shopping_cart=models.Value(
                     False, output_field=models.BooleanField())
             )
-
-        author_id = self.request.query_params.get('author')
-        if author_id:
-            queryset = queryset.filter(author__id=author_id)
-
-        is_favorited = self.request.query_params.get('is_favorited')
-        if is_favorited == '1' and user.is_authenticated:
-            queryset = queryset.filter(favorites__user=user)
 
         return queryset
 
@@ -287,10 +275,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
                 {'errors': error_message},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-
-        if return_count:
-            count = relation_model.objects.filter(user=user).count()
-            return Response({'count': count}, status=status.HTTP_200_OK)
 
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -347,7 +331,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
             relation_model=ShoppingCart,
             create_serializer=ShoppingCartCreateSerializer,
             error_message='Рецепта нет в списке покупок.',
-            return_count=True
         )
 
     @staticmethod
@@ -391,15 +374,12 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     @action(methods=['get'], detail=True, url_path='get-link')
     def get_link(self, request, pk=None):
-        try:
-            recipe = self.get_object()
-            return Response(
-                {
-                    'short-link': request.build_absolute_uri(
-                        reverse('api:recipes-detail', kwargs={'pk': recipe.pk})
-                    )
-                },
-                status=HTTPStatus.OK,
-            )
-        except Http404:
-            raise NotFound(detail='Страница не найдена.')
+        recipe = self.get_object()
+        return Response(
+            {
+                'short-link': request.build_absolute_uri(
+                    reverse('api:recipes-detail', kwargs={'pk': recipe.pk})
+                )
+            },
+            status=HTTPStatus.OK,
+        )
