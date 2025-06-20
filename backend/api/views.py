@@ -350,11 +350,16 @@ class RecipeViewSet(viewsets.ModelViewSet):
             return_count=True
         )
 
+    @staticmethod
     def generate_shopping_list(user):
         ingredients = (
             RecipeIngredient.objects.filter(
-                recipe__shopping_carts__user=user)
-            .values("ingredient__name", "ingredient__measurement_unit")
+                recipe__shopping_carts__user=user
+            )
+            .values(
+                "ingredient__name",
+                "ingredient__measurement_unit"
+            )
             .annotate(total_amount=Sum("amount"))
             .order_by("ingredient__name")
         )
@@ -368,7 +373,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
                 f"{item['total_amount']} "
                 f"{item['ingredient__measurement_unit']}\n"
             )
-        content.write(line.encode('utf-8'))
+            content.write(line.encode('utf-8'))
         content.seek(0)
         filename = DOWNLOAD_SHOPPING_CART_FILE_NAME
         return filename, content
@@ -398,28 +403,3 @@ class RecipeViewSet(viewsets.ModelViewSet):
             )
         except Http404:
             raise NotFound(detail="Страница не найдена.")
-
-    def update(self, request, *args, **kwargs):
-        try:
-            partial = kwargs.pop("partial", True)
-            instance = self.get_object()
-
-            serializer = self.get_serializer(
-                instance, data=request.data, partial=partial
-            )
-            serializer.is_valid(raise_exception=True)
-            self.perform_update(serializer)
-
-            return Response(serializer.data)
-
-        except serializers.ValidationError as e:
-            return Response({"errors": e.detail},
-                            status=status.HTTP_400_BAD_REQUEST)
-        except Exception as e:
-            return Response(
-                {"error": f"Ошибка сервера: {str(e)}"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
-
-    def perform_update(self, serializer):
-        serializer.save()
