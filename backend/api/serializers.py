@@ -345,3 +345,74 @@ class ShoppingCartCountSerializer(serializers.ModelSerializer):
             instance.recipe.image else None,
             "cooking_time": instance.recipe.cooking_time,
         }
+
+
+class SubscribeCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Subscribe
+        fields = ("author",)
+
+    def create(self, validated_data):
+        return Subscribe.objects.create(
+            user=self.context["request"].user,
+            author=validated_data["author"]
+        )
+
+    def validate_author(self, value):
+        user = self.context["request"].user
+        if user == value:
+            raise serializers.ValidationError(
+                "Нельзя подписаться на себя"
+            )
+        return value
+
+    def validate(self, data):
+        user = self.context["request"].user
+        author = data["author"]
+
+        if Subscribe.objects.filter(user=user, author=author).exists():
+            raise serializers.ValidationError(
+                "Вы уже подписаны на этого пользователя"
+            )
+
+        return data
+
+
+class FavoriteCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Favorite
+        fields = ("recipe",)
+
+    def create(self, validated_data):
+        return Favorite.objects.create(
+            user=self.context["request"].user,
+            recipe=validated_data["recipe"]
+        )
+
+    def validate_recipe(self, value):
+        user = self.context["request"].user
+        if Favorite.objects.filter(user=user, recipe=value).exists():
+            raise serializers.ValidationError(
+                "Рецепт уже в избранном"
+            )
+        return value
+
+
+class ShoppingCartCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ShoppingCart
+        fields = ("recipe",)
+
+    def create(self, validated_data):
+        return ShoppingCart.objects.create(
+            user=self.context["request"].user,
+            recipe=validated_data["recipe"]
+        )
+
+    def validate_recipe(self, value):
+        user = self.context["request"].user
+        if ShoppingCart.objects.filter(user=user, recipe=value).exists():
+            raise serializers.ValidationError(
+                "Рецепт уже в корзине"
+            )
+        return value
