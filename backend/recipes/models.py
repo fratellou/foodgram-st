@@ -2,17 +2,21 @@ from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.utils import timezone
 
+from constants import (
+    INGREDIENT_MEASUREMENT_MAX_LENGTH,
+    INGREDIENT_NAME_MAX_LENGTH,
+    RECIPE_IMAGE_UPLOAD_TO,
+    RECIPE_NAME_MAX_LENGTH,
+)
 from users.models import User
 
 
 class Ingredient(models.Model):
-    NAME_MAX_LENGTH = 128
-    MEASUREMENT_MAX_LENGTH = 64
-
-    name = models.CharField(max_length=NAME_MAX_LENGTH, unique=True,
+    name = models.CharField(max_length=INGREDIENT_NAME_MAX_LENGTH, unique=True,
                             verbose_name="Название")
     measurement_unit = models.CharField(
-        max_length=MEASUREMENT_MAX_LENGTH, verbose_name="Единица измерения")
+        max_length=INGREDIENT_MEASUREMENT_MAX_LENGTH,
+        verbose_name="Единица измерения")
 
     class Meta:
         verbose_name = "Ингредиент"
@@ -23,17 +27,15 @@ class Ingredient(models.Model):
 
 
 class Recipe(models.Model):
-    NAME_MAX_LENGTH = 128
-    IMAGE_UPLOAD_TO = "recipes/"
 
     author = models.ForeignKey(
         User, verbose_name="Автор", on_delete=models.CASCADE,
         related_name="recipes"
     )
-    name = models.CharField(max_length=NAME_MAX_LENGTH,
+    name = models.CharField(max_length=RECIPE_NAME_MAX_LENGTH,
                             verbose_name="Название")
     image = models.ImageField(
-        verbose_name="Картинка", upload_to=IMAGE_UPLOAD_TO
+        verbose_name="Картинка", upload_to=RECIPE_IMAGE_UPLOAD_TO
     )
     text = models.CharField(verbose_name="Описание")
     ingredients = models.ManyToManyField(

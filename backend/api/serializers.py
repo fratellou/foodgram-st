@@ -6,6 +6,7 @@ from django.db import transaction
 from djoser.serializers import UserSerializer
 from rest_framework import serializers
 
+from constants import COOKING_MIN_VALUE, MAX_IMAGE_SIZE
 from recipes.models import (
     Favorite,
     Ingredient,
@@ -19,8 +20,6 @@ User = get_user_model()
 
 
 class Base64ImageField(serializers.ImageField):
-    MAX_SIZE = 5 * 1024 * 1024
-
     def to_internal_value(self, data):
         if isinstance(data, str) and data.startswith("data:image"):
             format, imgstr = data.split(";base64,")
@@ -29,10 +28,10 @@ class Base64ImageField(serializers.ImageField):
         return super().to_internal_value(data)
 
     def validate(self, value):
-        if value.size > self.MAX_SIZE:
+        if value.size > MAX_IMAGE_SIZE:
             raise serializers.ValidationError(
                 "Размер файла не должен превышать"
-                + f"{self.MAX_SIZE//(1024*1024)}MB"
+                + f"{self.MAX_IMAGE_SIZE//(1024*1024)}MB"
             )
 
         valid_extensions = ["jpg", "jpeg", "png", "gif"]
@@ -121,8 +120,6 @@ class RecipeIngredientSerializer(serializers.ModelSerializer):
 
 
 class RecipeSerializer(serializers.ModelSerializer):
-    COOKING_MIN_VALUE = 1
-
     author = UserSerializer(read_only=True)
     ingredients = RecipeIngredientSerializer(
         many=True, source="recipe_ingredients")

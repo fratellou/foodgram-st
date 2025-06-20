@@ -30,6 +30,7 @@ from api.serializers import (
     UserCreateSerializer,
     UserSerializer,
 )
+from constants import PAGINATION_MAX_PAGE_SIZE, PAGINATION_PAGE_SIZE
 from recipes.models import (
     Favorite,
     Ingredient,
@@ -43,13 +44,10 @@ User = get_user_model()
 
 
 class StandardResultsSetPagination(PageNumberPagination):
-    PAGE_SIZE = 6
-    MAX_PAGE_SIZE = 50
-
-    page_size = PAGE_SIZE
+    page_size = PAGINATION_PAGE_SIZE
     page_size_query_param = "limit"
     page_query_param = "page"
-    max_page_size = MAX_PAGE_SIZE
+    max_page_size = PAGINATION_MAX_PAGE_SIZE
 
 
 class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
