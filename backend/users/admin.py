@@ -2,6 +2,7 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.db.models import Count
 from django.utils.html import format_html
+
 from users.models import Subscribe, User
 
 

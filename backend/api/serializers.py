@@ -4,10 +4,16 @@ from django.contrib.auth import get_user_model
 from django.core.files.base import ContentFile
 from django.db import transaction
 from djoser.serializers import UserSerializer
-from foodgram.constants import COOKING_MIN_VALUE, MAX_IMAGE_SIZE
-from recipes.models import (Favorite, Ingredient, Recipe, RecipeIngredient,
-                            ShoppingCart)
 from rest_framework import serializers
+
+from foodgram.constants import COOKING_MIN_VALUE, MAX_IMAGE_SIZE
+from recipes.models import (
+    Favorite,
+    Ingredient,
+    Recipe,
+    RecipeIngredient,
+    ShoppingCart,
+)
 from users.models import Subscribe
 
 User = get_user_model()

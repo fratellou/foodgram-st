@@ -1,32 +1,51 @@
 from http import HTTPStatus
 from io import BytesIO
 
-from api.permissions import IsAuthorOrReadOnly
-from api.serializers import (Base64ImageField, FavoriteCreateSerializer,
-                             IngredientSerializer, RecipeCreateSerializer,
-                             RecipeSerializer, RecipeShortSerializer,
-                             ShoppingCartCountSerializer,
-                             ShoppingCartCreateSerializer,
-                             SubscribeCreateSerializer, SubscribeSerializer,
-                             UserCreateSerializer, UserSerializer)
 from django.contrib.auth import get_user_model
 from django.db import models
 from django.db.models import Count, Exists, OuterRef, Sum
 from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404
 from djoser.views import UserViewSet as DjoserUserViewSet
-from foodgram.constants import (DOWNLOAD_SHOPPING_CART_FILE_NAME,
-                                PAGINATION_MAX_PAGE_SIZE, PAGINATION_PAGE_SIZE)
-from recipes.models import (Favorite, Ingredient, Recipe, RecipeIngredient,
-                            ShoppingCart)
 from rest_framework import filters, serializers, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound
 from rest_framework.pagination import PageNumberPagination
-from rest_framework.permissions import (AllowAny, IsAuthenticated,
-                                        IsAuthenticatedOrReadOnly)
+from rest_framework.permissions import (
+    AllowAny,
+    IsAuthenticated,
+    IsAuthenticatedOrReadOnly,
+)
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
+
+from api.permissions import IsAuthorOrReadOnly
+from api.serializers import (
+    Base64ImageField,
+    FavoriteCreateSerializer,
+    IngredientSerializer,
+    RecipeCreateSerializer,
+    RecipeSerializer,
+    RecipeShortSerializer,
+    ShoppingCartCountSerializer,
+    ShoppingCartCreateSerializer,
+    SubscribeCreateSerializer,
+    SubscribeSerializer,
+    UserCreateSerializer,
+    UserSerializer,
+)
+from foodgram.constants import (
+    DOWNLOAD_SHOPPING_CART_FILE_NAME,
+    PAGINATION_MAX_PAGE_SIZE,
+    PAGINATION_PAGE_SIZE,
+)
+from recipes.models import (
+    Favorite,
+    Ingredient,
+    Recipe,
+    RecipeIngredient,
+    ShoppingCart,
+)
 from users.models import Subscribe
 
 User = get_user_model()

@@ -1,9 +1,13 @@
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.utils import timezone
-from foodgram.constants import (INGREDIENT_MEASUREMENT_MAX_LENGTH,
-                                INGREDIENT_NAME_MAX_LENGTH,
-                                RECIPE_IMAGE_UPLOAD_TO, RECIPE_NAME_MAX_LENGTH)
+
+from foodgram.constants import (
+    INGREDIENT_MEASUREMENT_MAX_LENGTH,
+    INGREDIENT_NAME_MAX_LENGTH,
+    RECIPE_IMAGE_UPLOAD_TO,
+    RECIPE_NAME_MAX_LENGTH,
+)
 from users.models import User
 
 
