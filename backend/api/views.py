@@ -1,7 +1,8 @@
 from http import HTTPStatus
 
 from django.contrib.auth import get_user_model
-from django.db.models import Sum
+from django.db import models
+from django.db.models import Count, Exists, OuterRef, Sum
 from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404
 from djoser.views import UserViewSet as DjoserUserViewSet
@@ -17,7 +18,7 @@ from rest_framework.permissions import (
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
 
-from api.permission import IsAuthorOrReadOnly
+from api.permissions import IsAuthorOrReadOnly
 from api.serializers import (
     Base64ImageField,
     IngredientSerializer,
@@ -105,13 +106,18 @@ class UserViewSet(DjoserUserViewSet):
                 )
 
             Subscribe.objects.create(user=request.user, author=author)
+            subscription = Subscribe.objects.filter(
+                user=request.user, author=author
+            ).annotate(
+                recipes_count=Count('author__recipes')
+            ).first()
+
             serializer = SubscribeSerializer(
-                Subscribe.objects.get(user=request.user, author=author),
+                subscription,
                 context={"request": request},
             )
             return Response(serializer.data, status=201)
 
-        # DELETE method
         subscription = Subscribe.objects.filter(user=user, author=author)
         if not subscription.exists():
             return Response(
@@ -125,7 +131,11 @@ class UserViewSet(DjoserUserViewSet):
     @action(detail=False, methods=["get"],
             permission_classes=[IsAuthenticated])
     def subscriptions(self, request):
-        subscriptions = Subscribe.objects.filter(user=request.user)
+        subscriptions = Subscribe.objects.filter(
+            user=request.user
+        ).annotate(
+            recipes_count=Count('author__recipes')
+        )
         page = self.paginate_queryset(subscriptions)
         serializer = SubscribeSerializer(
             page, many=True, context={"request": request})
@@ -204,17 +214,39 @@ class RecipeViewSet(viewsets.ModelViewSet):
         return [IsAuthorOrReadOnly()]
 
     def get_queryset(self):
-        queryset = super().get_queryset()
+        user = self.request.user
+        queryset = Recipe.objects.select_related("author").prefetch_related(
+            "recipe_ingredients__ingredient"
+        )
+
+        if user.is_authenticated:
+            favorite_subquery = Favorite.objects.filter(
+                user=user,
+                recipe=OuterRef('pk')
+            )
+            cart_subquery = ShoppingCart.objects.filter(
+                user=user,
+                recipe=OuterRef('pk')
+            )
+            queryset = queryset.annotate(
+                is_favorited=Exists(favorite_subquery),
+                is_in_shopping_cart=Exists(cart_subquery)
+            )
+        else:
+            queryset = queryset.annotate(
+                is_favorited=models.Value(
+                    False, output_field=models.BooleanField()),
+                is_in_shopping_cart=models.Value(
+                    False, output_field=models.BooleanField())
+            )
 
         author_id = self.request.query_params.get("author")
         if author_id:
             queryset = queryset.filter(author__id=author_id)
 
         is_favorited = self.request.query_params.get("is_favorited")
-        if is_favorited == "1":
-            user = self.request.user
-            if user.is_authenticated:
-                return queryset.filter(favorites__user=user)
+        if is_favorited == "1" and user.is_authenticated:
+            queryset = queryset.filter(favorites__user=user)
 
         return queryset
 
@@ -249,8 +281,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=["get"],
             permission_classes=[IsAuthenticated])
     def favorites(self, request):
-        favorite_recipes = Recipe.objects.filter(
-            favorite__user=request.user)
+        favorite_recipes = self.get_queryset().filter(is_favorited=True)
 
         page = self.paginate_queryset(favorite_recipes)
         if page is not None:
