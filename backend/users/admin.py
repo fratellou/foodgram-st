@@ -78,7 +78,7 @@ class CustomUserAdmin(UserAdmin):
 @admin.register(Subscribe)
 class SubscribeAdmin(admin.ModelAdmin):
     list_display = ('user', 'author')
-    autocomplete_fields = ['user', 'author']
+    autocomplete_fields = ('user', 'author')
     empty_value_display = '-'
 
     def get_queryset(self, request):

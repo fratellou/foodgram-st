@@ -27,13 +27,13 @@ class Command(BaseCommand):
             with data_file.open(encoding='utf-8') as file:
                 data = json.load(file)
 
-                ingredients = [
+                ingredients = (
                     Ingredient(
                         name=item['name'],
                         measurement_unit=item['measurement_unit']
                     )
                     for item in data
-                ]
+                )
 
                 Ingredient.objects.bulk_create(
                     ingredients, ignore_conflicts=True)

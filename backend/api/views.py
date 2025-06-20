@@ -61,16 +61,16 @@ class StandardResultsSetPagination(PageNumberPagination):
 class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
-    filter_backends = [filters.SearchFilter]
-    permission_classes = [AllowAny]
-    search_fields = ['^name']
+    filter_backends = (filters.SearchFilter,)
+    permission_classes = (AllowAny,)
+    search_fields = ('^name')
     pagination_class = None
 
 
 class UserViewSet(DjoserUserViewSet):
     serializer_class = UserSerializer
     pagination_class = StandardResultsSetPagination
-    permission_classes = [IsAuthenticatedOrReadOnly]
+    permission_classes = (IsAuthenticatedOrReadOnly,)
     lookup_field = 'id'
 
     def get_serializer_class(self):
@@ -195,9 +195,9 @@ class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.select_related('author').prefetch_related(
         'recipe_ingredients__ingredient'
     )
-    permission_classes = [IsAuthorOrReadOnly]
+    permission_classes = (IsAuthorOrReadOnly,)
     pagination_class = StandardResultsSetPagination
-    http_method_names = ['get', 'post', 'patch', 'delete']
+    http_method_names = ('get', 'post', 'patch', 'delete')
 
     def get_serializer_class(self):
         if self.action in ('list', 'retrieve'):
@@ -295,7 +295,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(
-        detail=True, methods=['post', 'delete'],
+        detail=True, methods=('post', 'delete'),
         permission_classes=[IsAuthenticated]
     )
     def favorite(self, request, pk=None):

@@ -34,7 +34,7 @@ class Base64ImageField(serializers.ImageField):
                  f'{self.MAX_IMAGE_SIZE//(1024*1024)}MB')
             )
 
-        valid_extensions = ['jpg', 'jpeg', 'png', 'gif']
+        valid_extensions = ('jpg', 'jpeg', 'png', 'gif')
         ext = value.name.split('.')[-1].lower()
         if ext not in valid_extensions:
             raise serializers.ValidationError(
@@ -299,15 +299,14 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
 
     @transaction.atomic
     def create_ingredients(self, recipe, ingredients_data):
-        ingredients = []
-        for ingredient in ingredients_data:
-            ingredients.append(
-                RecipeIngredient(
-                    recipe=recipe,
-                    ingredient_id=ingredient['id'],
-                    amount=ingredient['amount'],
-                )
+        ingredients = [
+            RecipeIngredient(
+                recipe=recipe,
+                ingredient_id=ingredient['id'],
+                amount=ingredient['amount'],
             )
+            for ingredient in ingredients_data
+        ]
         RecipeIngredient.objects.bulk_create(ingredients)
 
     @transaction.atomic

@@ -46,12 +46,12 @@ class Recipe(models.Model):
     )
     cooking_time = models.PositiveSmallIntegerField(
         verbose_name='Время приготовления (в минутах)',
-        validators=[
+        validators=(
             MinValueValidator(
                 1, message='Время должно быть не менее 1 минуты'),
             MaxValueValidator(1440,
                               message=('Время не должно превышать'
-                                       '24 часа (1440 минут)'))],
+                                       '24 часа (1440 минут)'))),
     )
 
     pub_date = models.DateTimeField(
@@ -63,7 +63,7 @@ class Recipe(models.Model):
     class Meta:
         verbose_name = 'Рецепт'
         verbose_name_plural = 'Рецепты'
-        ordering = ['-pub_date']
+        ordering = ('-pub_date',)
 
     def __str__(self):
         return self.name
@@ -84,12 +84,12 @@ class RecipeIngredient(models.Model):
     )
     amount = models.PositiveSmallIntegerField(
         verbose_name='Колличество ингредиента в рецепте',
-        validators=[
+        validators=(
             MinValueValidator(
                 1, message='Количество ингредиентов должно быть не менее 1'),
             MaxValueValidator(
                 100, message='Количество ингредиентов не должно превышать 100')
-        ],
+        ),
     )
 
     class Meta:
@@ -97,7 +97,7 @@ class RecipeIngredient(models.Model):
         verbose_name_plural = 'Ингредиенты в рецепте'
         constraints = [
             models.UniqueConstraint(
-                fields=['recipe', 'ingredient'],
+                fields=('recipe', 'ingredient'),
                 name='unique_recipe_ingredient'
             )
         ]
@@ -127,7 +127,7 @@ class BaseUserRecipeModel(models.Model):
         abstract = True
         constraints = [
             models.UniqueConstraint(
-                fields=['user', 'recipe'],
+                fields=('user', 'recipe'),
                 name='unique_%(class)s'
             )
         ]

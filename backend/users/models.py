@@ -45,7 +45,7 @@ class User(AbstractUser):
     )
 
     USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['username', 'last_name', 'first_name']
+    REQUIRED_FIELDS = ('username', 'last_name', 'first_name')
 
     class Meta:
         verbose_name = 'Пользователь'
@@ -74,7 +74,7 @@ class Subscribe(models.Model):
         verbose_name_plural = 'Подписки'
         constraints = [
             models.UniqueConstraint(
-                fields=['user', 'author'], name='unique_subscribe')
+                fields=('user', 'author'), name='unique_subscribe')
         ]
 
     def __str__(self):
