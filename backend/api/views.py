@@ -369,9 +369,9 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
         for item in ingredients:
             line = (
-                f"{item['ingredient__name']} - "
-                f"{item['total_amount']} "
-                f"{item['ingredient__measurement_unit']}\n"
+                f'{item["ingredient__name"]} - '
+                f'{item["total_amount"]} '
+                f'{item["ingredient__measurement_unit"]}\n'
             )
             content.write(line.encode('utf-8'))
         content.seek(0)
@@ -386,7 +386,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
             content,
             content_type='text/plain; charset=utf-8'
         )
-        response['Content-Disposition'] = f"attachment; filename='{filename}'"
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
         return response
 
     @action(methods=['get'], detail=True, url_path='get-link')
