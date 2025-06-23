@@ -1,29 +1,29 @@
 USER_EMAIL_MAX_LENGTH = 254
-"""Maximum length for user email fields"""
+"""Максимальная длина поля электронной почты."""
 USER_USERNAME_MAX_LENGTH = 150
-"""Maximum length for usernames"""
+"""Максимальная длина логина."""
 USER_NAME_MAX_LENGTH = 150
-"""Maximum length for first and last names"""
+"""Максимальная длина имени и фамилии."""
 USER_AVATAR_UPLOAD_TO = 'avatars/'
-"""Upload path for user avatars"""
+"""Путь загрузки аватара."""
 
 INGREDIENT_NAME_MAX_LENGTH = 128
-"""Maximum length for ingredient names"""
+"""Максимальная длина названия ингредиента."""
 INGREDIENT_MEASUREMENT_MAX_LENGTH = 64
-"""Maximum length for measurement units"""
+"""Максимальная длина единицы измерения."""
 RECIPE_NAME_MAX_LENGTH = 128
-"""Maximum length for recipe names"""
+"""Максимальная длина названия рецепта."""
 RECIPE_IMAGE_UPLOAD_TO = 'recipes/'
-"""Upload path for recipe images"""
+"""Путь загрузки изображения рецепта."""
 
 MAX_IMAGE_SIZE = 5 * 1024 * 1024
-"""Maximum allowed image size in bytes (5MB)"""
+"""Максимальный разрешенный размер изображения в байтах (5Мб)."""
 COOKING_MIN_VALUE = 1
-"""Minimum cooking time value in minutes"""
+"""Минимальное время приготовления в минутах."""
 
 PAGINATION_PAGE_SIZE = 6
-"""Default number of items per page"""
+"""Количество объектов на странице."""
 PAGINATION_MAX_PAGE_SIZE = 50
-"""Maximum allowed items per page"""
+"""Максимальное разрешенное количество объектов на странице."""
 DOWNLOAD_SHOPPING_CART_FILE_NAME = 'shopping_list.txt'
-"""Default filename for downloaded shopping lists"""
+"""Имя файла для загрузки списка покупок."""
