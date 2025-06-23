@@ -3,6 +3,7 @@ import base64
 from django.contrib.auth import get_user_model
 from django.core.files.base import ContentFile
 from django.db import transaction
+from django_filters import rest_framework as filters
 from djoser.serializers import UserSerializer
 from rest_framework import serializers
 
@@ -409,3 +410,25 @@ class SubscribeCreateSerializer(BaseUserRelationCreateSerializer):
                 'Нельзя подписаться на себя'
             )
         return value
+
+
+class RecipeFilter(filters.FilterSet):
+    author = filters.NumberFilter(field_name='author__id')
+    is_favorited = filters.BooleanFilter(method='filter_is_favorited')
+    is_in_shopping_cart = filters.BooleanFilter(method='filter_in_cart')
+
+    class Meta:
+        model = Recipe
+        fields = ['author', 'is_favorited', 'is_in_shopping_cart']
+
+    def filter_is_favorited(self, queryset, name, value):
+        user = self.request.user
+        if value and user.is_authenticated:
+            return queryset.filter(favorites__user=user)
+        return queryset
+
+    def filter_in_cart(self, queryset, name, value):
+        user = self.request.user
+        if value and user.is_authenticated:
+            return queryset.filter(shopping_carts__user=user)
+        return queryset

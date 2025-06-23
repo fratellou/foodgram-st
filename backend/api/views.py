@@ -6,6 +6,7 @@ from django.db import models
 from django.db.models import Count, Exists, OuterRef, Sum
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
+from django_filters.rest_framework import DjangoFilterBackend
 from djoser.views import UserViewSet as DjoserUserViewSet
 from rest_framework import filters, serializers, status, viewsets
 from rest_framework.decorators import action
@@ -24,6 +25,7 @@ from api.serializers import (
     FavoriteCreateSerializer,
     IngredientSerializer,
     RecipeCreateSerializer,
+    RecipeFilter,
     RecipeSerializer,
     RecipeShortSerializer,
     ShoppingCartCountSerializer,
@@ -190,12 +192,12 @@ class UserViewSet(DjoserUserViewSet):
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
-    queryset = Recipe.objects.select_related('author').prefetch_related(
-        'recipe_ingredients__ingredient'
-    )
     permission_classes = (IsAuthorOrReadOnly,)
     pagination_class = StandardResultsSetPagination
     http_method_names = ('get', 'post', 'patch', 'delete')
+
+    filter_backends = (DjangoFilterBackend,)
+    filterset_class = RecipeFilter
 
     def get_serializer_class(self):
         if self.action in ('list', 'retrieve'):
@@ -209,7 +211,9 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        queryset = super().get_queryset()
+        queryset = Recipe.objects.select_related('author').prefetch_related(
+            'recipe_ingredients__ingredient'
+        )
 
         if user.is_authenticated:
             favorite_subquery = Favorite.objects.filter(
@@ -253,11 +257,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
                     {'errors': str(e)},
                     status=status.HTTP_400_BAD_REQUEST
                 )
-
-            if return_count:
-                count = relation_model.objects.filter(user=user).count()
-                return Response({'count': count},
-                                status=status.HTTP_201_CREATED)
 
             response_serializer = RecipeShortSerializer(
                 recipe, context={'request': request}
